@@ -5,15 +5,40 @@
       #hidden-paragraph {
         display: none;
       }
+      a:link {
+  color: #1772d0;
+  
+ 
+}
+
+a:visited {
+  color: #1772d0;
+  
+  
+}
+
+a:hover {
+  color: #1772d0;
+  
+  
+}
+
+a:active {
+  color: #1772d0;
+
+ 
+}
+      
     </style>
     <script>
     function toggleParagraph() {
        
       var paragraph = document.getElementById('hidden-paragraph');
-      
+      if( paragraph.style.display = 'none'){
       paragraph.style.display = 'block';
-      document.getElementById('reveal-link').style.display = 'none'; // Hide the link
-       
+      //document.getElementById('reveal-link').style.display = 'none'; // Hide the link
+      } 
+      else{ paragraph.style.display = 'none';}
     }
     </script>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
