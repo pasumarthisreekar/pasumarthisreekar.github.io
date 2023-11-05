@@ -7,15 +7,13 @@
       }
     </style>
     <script>
-    function toggleParagraph(event) {
-      event.preventDefault();  // Prevent the default behavior of the anchor
+    function toggleParagraph() {
+       
       var paragraph = document.getElementById('hidden-paragraph');
-      if (paragraph.style.display === 'none') {
-        paragraph.style.display = 'block';
-        document.getElementById('reveal-link').style.display = 'none'; // Hide the link
-      } else {
-        paragraph.style.display = 'none';
-      }
+      
+      paragraph.style.display = 'block';
+      document.getElementById('reveal-link').style.display = 'none'; // Hide the link
+       
     }
     </script>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -95,7 +93,7 @@
 Structure Preserving Deep Autoencoder based Dimensionality Reduction for Data Visualization
 </span>
 <br />
-	  <a href="https://arxiv.org/abs/2310.07204">thesis</a><a href="#" id="reveal-link" onclick="toggleParagraph(event);">description</a>
+	  <a href="https://arxiv.org/abs/2310.07204">thesis</a> <a href="#" id="reveal-link" onclick="toggleParagraph();">description</a>
 
 <p id="hidden-paragraph">Autoencoders are typically used for the task of dimensionality reduction. However, a drawback exists. If an autoencoder has additional representative capacity, it may not preserve the structure of data faithfully in the lower-dimensional space. Regularisation can be a way to solve this problem, as it can constrain the autoencoder from merely copying the input to the output. Here, we propose a regulariser that aims to preserve the geometric properties of the input data by preserving the geodesic distances between data points in the input space as the Euclidean distance in the embedding space. Further, for the purpose of data visualization, we set the lower dimensionality to 2 or 3. We then test the visual quality of the embeddings and observe that the autoencoder was able to preserve the manifold structure successfully.
 </p>
