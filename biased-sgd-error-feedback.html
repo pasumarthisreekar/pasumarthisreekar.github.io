@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Leash: How Error Feedback Kills the Floor — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; Biased SGD, Part 3</p>
+<h1>The Leash: How Error Feedback Kills the Floor</h1>
+<p><em>Third post in the biased-SGD series. The first two derived a permanent error floor for naive compressed SGD — a constant, $\zeta^2$, that no amount of training or stepsize tuning could remove. This post derives the fix, and the fix turns out to be almost embarrassingly simple: stop throwing away what you compress. Hold onto it.</em></p>
+<hr />
+<p>Naive noisy top-$k$ has a floor: $\zeta^2 = (d-k)\sigma^2$, sitting in the final convergence bound with no dependence on the stepsize $\gamma$ or the iteration count $T$. Train forever, shrink the learning rate to nothing — the floor stays exactly where it is. The reason, mechanically, is that every step throws away whatever didn't make the cut, permanently. Ordinary SGD's noise averages out because it's genuinely random, zero-mean, self-correcting over time. Compression's damage isn't random in that sense — it's a systematic, repeatable policy (keep the largest, always), and repeatable-but-lossy doesn't average away on its own.</p>
+<p>Error feedback's fix: keep what gets discarded. Not forever — just until next step, when it gets added back in and given a second chance to survive compression.</p>
+<h2>The algorithm</h2>
+<p>$$p_t = \gamma g_t + e_t, \qquad \Delta_t = C(p_t), \qquad x_{t+1} = x_t - \Delta_t, \qquad e_{t+1} = p_t - \Delta_t$$</p>
+<p>Compress not the raw gradient, but the gradient plus whatever leftover error accumulated from last time. Whatever compression discards this round becomes next round's $e_{t+1}$, feeding back in. Nothing vanishes — it's delayed, not lost.</p>
+<h2>The virtual sequence — the trick that makes the whole proof possible</h2>
+<p>Define $\tilde x_t := x_t - e_t$, a sequence that only ever exists inside the analysis, never computed by the actual algorithm. Trace its recursion:</p>
+<p>$$\tilde x_{t+1} = x_{t+1}-e_{t+1} = (x_t-\Delta_t)-(p_t-\Delta_t) = x_t - p_t = x_t - (\gamma g_t+e_t) = (x_t-e_t)-\gamma g_t = \tilde x_t - \gamma g_t$$</p>
+<p>The compressed quantity $\Delta_t$ cancels out completely. What's left is $\tilde x_t - \gamma g_t$ — <strong>exactly the vanilla, uncompressed SGD update rule</strong>, using the raw stochastic gradient $g_t$, never touched by $C$ at all. The virtual sequence behaves as if compression never happened. All of compression's damage gets pushed entirely into the <em>gap</em> between the real iterate and the virtual one — and that gap is exactly $e_t$.</p>
+<p>If $e_t$ stays bounded, $x_t$ never wanders far from a sequence that's provably converging like ordinary SGD. The whole proof reduces to one question: does $e_t$ stay bounded?</p>
+<h2>Lemma 3 — proving the error buffer never blows up</h2>
+<p>Start from the compressor's own defining property, applied to $p_t$:
+$$|e_{t+1}|^2 = |p_t - C(p_t)|^2 \le (1-\delta)|p_t|^2 = (1-\delta)|\gamma g_t+e_t|^2$$</p>
+<p>Split the right side with Young's inequality, $|a+b|^2\le(1+\rho)|a|^2+(1+1/\rho)|b|^2$, for a free parameter $\rho&gt;0$:
+$$|e_{t+1}|^2 \le (1-\delta)(1+\rho)|e_t|^2 + (1-\delta)(1+1/\rho)\gamma^2|g_t|^2$$</p>
+<p>Choose $\rho=\frac{\delta}{2(1-\delta)}$ specifically to control the first coefficient: $(1-\delta)(1+\rho) = (1-\delta)+\frac\delta2 = 1-\frac\delta2$ — strictly less than 1, for any $\delta\in(0,1]$. The second coefficient, $(1-\delta)(1+1/\rho) = \frac{(1-\delta)(2-\delta)}{\delta}$, is bounded above by $\frac2\delta$ (checking: this requires $(1-\delta)(2-\delta)\le2$, i.e. $\delta^2-3\delta\le0$, true for every $\delta$ in range). Taking expectations, with $E|g_t|^2\le G^2$:</p>
+<p>$$E_t \le \left(1-\frac\delta2\right)E_{t-1} + \frac2\delta\gamma^2G^2$$</p>
+<h2>Unrolling the recursion — a leaky bucket finding its equilibrium</h2>
+<p>This is a simple linear recursion, $E_t \le qE_{t-1}+B$, with $q=1-\delta/2&lt;1$ and $B=\frac2\delta\gamma^2G^2$. Unroll it all the way back to $t=0$:</p>
+<p>$$E_t \le q^tE_0 + B\sum_{i=0}^{t-1}q^i$$</p>
+<p>The error buffer starts empty ($e_0=0$, since Algorithm 2 initializes with nothing accumulated), so $E_0=0$ and the first term vanishes entirely. What remains is a geometric series, and since $q&lt;1$, it converges even as $t\to\infty$: $\sum_{i=0}^\infty q^i = \frac{1}{1-q} = \frac2\delta$. So:</p>
+<p>$$E_t \le B\cdot\frac2\delta = \frac{4\gamma^2G^2}{\delta^2}$$</p>
+<p>A fixed, finite ceiling — never growing with $t$, no matter how long training runs. The error buffer behaves like a leaky bucket: what flows in each step (bounded by $\gamma^2G^2$) is balanced by what leaks out (the $\delta/2$ contraction), and the two settle into a steady equilibrium rather than an unbounded pile-up. Critically, that equilibrium level scales with $\gamma^2$ — shrink the stepsize, and the ceiling shrinks with it, all the way to zero.</p>
+<h2>Theorem 2 — why the floor actually disappears from the final rate</h2>
+<p>The remaining step is to show the <em>real</em> iterate $x_t$ inherits the virtual sequence's clean convergence, with only a small, controllable penalty for the gap $e_t$.</p>
+<p>Apply smoothness to the <strong>virtual</strong> sequence, not the real one:
+$$f(\tilde x_{t+1}) \le f(\tilde x_t) - \gamma\langle\nabla f(\tilde x_t), g_t\rangle + \frac{L\gamma^2}{2}|g_t|^2$$</p>
+<p>Taking expectations, $E[g_t]=\nabla f(x_t)$ — the <em>real</em> iterate's gradient, not the virtual one's. This mismatch, $\nabla f(\tilde x_t)$ against $\nabla f(x_t)$, is the price of anchoring smoothness to a sequence the algorithm doesn't actually run. Resolve it with the exact algebraic identity $\langle a,b\rangle = \frac12(|a|^2+|b|^2-|a-b|^2)$:</p>
+<p>$$-\gamma\langle\nabla f(\tilde x_t),\nabla f(x_t)\rangle = -\frac\gamma2|\nabla f(\tilde x_t)|^2-\frac\gamma2|\nabla f(x_t)|^2+\frac\gamma2|\nabla f(\tilde x_t)-\nabla f(x_t)|^2$$</p>
+<p>The last term is the only new thing to control — and $L$-smoothness bounds gradient differences by point differences: $|\nabla f(\tilde x_t)-\nabla f(x_t)|^2 \le L^2|\tilde x_t-x_t|^2 = L^2|e_t|^2$, since $\tilde x_t-x_t=-e_t$ exactly, by construction.</p>
+<p>So the entire mismatch penalty is bounded by $\frac{\gamma L^2}{2}|e_t|^2$ — and substituting Lemma 3's bound directly in:</p>
+<p>$$\text{penalty} \le \frac{\gamma L^2}{2}\cdot\frac{4\gamma^2G^2}{\delta^2} = O(\gamma^3)$$</p>
+<h2>Why $\gamma^3$ is the whole story</h2>
+<p>Ordinary SGD's own noise term in the final bound scales like $\gamma^2$; the ordinary descent term scales like $\gamma$. A term that scales like $\gamma^3$ is smaller than <em>both</em> of those, for any small stepsize — it's a strictly lower-order correction, not a competing source of permanent error. Summed over $T$ steps and combined with the rest of the bound, the compression-induced term contributes nothing to the <em>dominant</em> rate at all; the overall convergence is governed entirely by the same $O(1/\sqrt T)$ non-convex SGD rate as if compression had never happened.</p>
+<p>Compare this directly to the floor from the naive case. $\zeta^2=(d-k)\sigma^2$ carried <strong>no</strong> power of $\gamma$ at all — a fixed constant, permanently present regardless of stepsize. Error feedback's corresponding term carries $\gamma^3$ — vanishing, and vanishing fast. Same compressor. Same contraction property $\delta=k/d$. Same noisy gradient. The only thing that changed is where the discarded information goes: thrown away forever, versus held for one step and given a second chance.</p>
+<h2>The one-sentence version</h2>
+<p>A leash of length $O(\gamma)$ tethers the real, compressed iterate to a virtual, perfectly-uncompressed one; as training proceeds and $\gamma$ shrinks toward zero — which any convergent SGD schedule requires anyway — that leash shrinks right along with it, and the real iterate gets dragged to exactly the same place the virtual one was always going.</p>
+<hr />
+<p><em>The naive floor existed because compression's mistakes were permanent. Error feedback's entire contribution is refusing to accept that premise: a mistake you remember and correct next turn was never really a mistake at all — just a payment deferred, and interest that happens to shrink every time you make it smaller.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>

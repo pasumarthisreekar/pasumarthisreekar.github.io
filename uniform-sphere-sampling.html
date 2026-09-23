@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why a Gaussian, Normalized, Gives You a Uniform Sphere — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; High-Dimensional Geometry, Part 1</p>
+<h1>Why a Gaussian, Normalized, Gives You a Uniform Sphere</h1>
+<p><em>A proof I refused to just believe</em></p>
+<hr />
+<p>There's a sentence in <em>Foundations of Data Science</em> (Blum, Hopcroft, Kannan) that looks completely innocent:</p>
+<blockquote>
+<p>Generate $x_1, x_2, \dots, x_d$ from independent standard Gaussians. Normalize $x$ to $x/|x|$. This gives a distribution that is uniform over the surface of the sphere.</p>
+</blockquote>
+<p>One sentence. No proof. Just — trust me.</p>
+<p>I didn't trust it. This is the record of what it actually took to make that sentence <em>mine</em> — not memorized, not accepted on authority, but rebuilt from the ground up until every piece of it was load-bearing and none of it was hand-waved.</p>
+<h2>The claim, stated properly</h2>
+<p>Let $x = (x_1, \dots, x_d)$ where each $x_i \sim \mathcal{N}(0,1)$, independently. The joint density is</p>
+<p>$$p(x) = \frac{1}{(2\pi)^{d/2}} e^{-|x|^2/2}$$</p>
+<p>Look closely at that formula. It depends on $x$ only through $|x|$ — the distance from the origin. It has no way of "seeing" direction at all. Two points the same distance from the origin, no matter which way they point, get exactly the same density. That single structural fact — <strong>spherical symmetry</strong> — is the entire engine behind everything that follows.</p>
+<p>The claim is: normalize $x$ to a unit vector, $u = x/|x|$, and $u$ is uniformly distributed on the unit sphere $S^{d-1}$.</p>
+<h2>Why "the density is flat on the sphere" isn't enough by itself</h2>
+<p>The tempting shortcut is: "plug a unit vector into $p(x)$, get the same number everywhere on the sphere, therefore uniform, done."</p>
+<p>This is <em>almost</em> the argument, and it's the right intuition — but it's not actually a proof, and chasing down exactly why took real work. $p(x)$ is a density over $\mathbb{R}^d$ — it tells you how probability is spread over <em>volume</em>. The unit sphere is a $(d-1)$-dimensional surface sitting inside that space, with <strong>zero volume</strong>. Asking "what's the probability $x$ lands exactly on the sphere" gives you zero, always, for any continuous distribution — sphere or not. So you can't get $u$'s distribution by just restricting $p(x)$ to the sphere and calling it a day. The dimensions don't match, and pretending they do is exactly the kind of thing that feels like understanding without being it.</p>
+<h2>The actual bridge: probability of landing in a patch</h2>
+<p>The fix is to stop asking about points and start asking about <strong>regions</strong>. Pick a small patch $A$ on the unit sphere. Ask:</p>
+<p>$$P(u \in A) = P\left(\frac{x}{|x|} \in A\right)$$</p>
+<p>This event — "$x$'s direction lands in $A$" — is the same as "$x$ lies somewhere in the infinite cone through $A$," at <em>any</em> length. That's the key move: since $u$'s value only depends on $x$'s direction, and $x$'s length is completely free (anywhere from $0$ to $\infty$), computing $P(u \in A)$ means integrating $p(x)$ over that whole cone, not just over the patch itself.</p>
+<p>In polar coordinates, $dx = r^{d-1}\, dr\, d\sigma(\theta)$, and the cone becomes a clean rectangle: $r$ from $0$ to $\infty$, $\theta$ ranging over $A$. So:</p>
+<p>$$P(u \in A) = \int_0^\infty \int_A \frac{1}{(2\pi)^{d/2}} e^{-r^2/2}\, r^{d-1}\, d\sigma(\theta)\, dr$$</p>
+<p>Because the integrand depends on $r$ but never on $\theta$, it factors cleanly:</p>
+<p>$$P(u \in A) = \underbrace{\left[\int_0^\infty \frac{1}{(2\pi)^{d/2}} e^{-r^2/2} r^{d-1}\, dr\right]}_{K,\ \text{a fixed constant, independent of } A} \times \ \text{Area}(A)$$</p>
+<p>Setting $A$ to the whole sphere forces $K = 1/\text{Area}(S^{d-1})$, since $u$ always lands somewhere. What's left is:</p>
+<p>$$P(u \in A) = \frac{\text{Area}(A)}{\text{Area}(S^{d-1})}$$</p>
+<p>Probability proportional to area, and nothing else. That <em>is</em> the definition of uniform.</p>
+<h2>The part that took the longest to actually feel true</h2>
+<p>Here's the piece I kept circling back to, night after night: normalizing doesn't <em>create</em> uniformity. It doesn't spread anything out or fix a bias. The direction was <strong>already</strong> uniform, baked into $x$ from the moment it was drawn — a direct consequence of spherical symmetry, true before anyone ever divided by $|x|$. Normalizing just <strong>deletes the magnitude</strong>, a piece of information that was always independent of direction to begin with (that's exactly what the clean factoring into a radial piece and an angular piece is saying). What's left, once you throw the magnitude away, is the direction — untouched, exactly as uniform as it always was.</p>
+<p>That distinction — <em>normalizing reveals uniformity, it doesn't cause it</em> — sounds like a small wording fix. It isn't. Getting the causal order backwards is precisely the kind of thing that lets you <em>sound</em> like you understand something while actually holding a slightly wrong picture of it.</p>
+<h2>The payoff: two random points, nearly perpendicular</h2>
+<p>Once uniformity is nailed down, something genuinely strange falls out almost for free. Draw two independent points $y, z$ from the same Gaussian. A short computation —</p>
+<p>$$E[(y_i - z_i)^2] = \text{Var}(y_i) + \text{Var}(z_i) = 2 \quad \text{for each coordinate}$$</p>
+<p>— summed over $d$ independent coordinates and concentrated by the law of large numbers, gives $|y - z|^2 \approx 2d \approx |y|^2 + |z|^2$. By the Pythagorean theorem, that's exactly the condition for $y \perp z$.</p>
+<p>Two vectors, picked with zero coordination, completely independently — and in high dimensions they land almost exactly perpendicular, essentially guaranteed. Not because anything is orthogonalizing them. Just because, once you have enough dimensions to work with, there's almost nowhere else for a random direction to go relative to a fixed one — the "equatorial band" of any axis swallows nearly the entire sphere.</p>
+<p>And that fact — "nearly orthogonal with high probability" — is not <em>evidence for</em> "the equator holds nearly all the area." Once uniformity is established, those two sentences are <strong>the same sentence</strong>, written in two different vocabularies. Probability equals area fraction; a probabilistic claim and a geometric claim about the sphere's shape become interchangeable, no translation needed, no residue left over.</p>
+<h2>Why this was worth doing the hard way</h2>
+<p>None of this is exotic. It's standard material — the kind of thing that shows up in a few lines of a data science textbook, cited and moved past, on the way to something else (the Johnson–Lindenstrauss lemma, random projections, the geometry of nearest neighbors in high dimensions). Most people read the sentence, nod, and keep going, and that's a completely reasonable way to use a textbook.</p>
+<p>But there's a difference between a fact you can cite and a fact you actually own — one where you could rebuild every joint of it under pressure, catch the exact place an inference is doing more work than it announces, and know precisely why the ordinary 2D and 3D intuition breaks the moment $d$ gets large. That difference isn't about intelligence. It's about refusing to let a "this sounds right" feeling stand in for an "I could rebuild this from nothing" feeling.</p>
+<p>One sentence in a textbook. A polar coordinate transform, a Jacobian, a union bound, a Pythagorean theorem, and a lot of stubbornness later — it's real now.</p>
+<hr />
+<p><em>Direction is uniform. Length concentrates around $\sqrt{d}$. Any two random points, in high enough dimensions, are nearly perpendicular — not by design, just by the geometry of having enough room to be anywhere at all.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>

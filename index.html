@@ -1,120 +1,99 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-    <style>
-  a {
-    margin: 2px; /* Adjust the value according to your preference */
-  }
-      #hidden-paragraph {
-        display: none;
-      }
-      #reveal-link{
-  color: #1772d0;}
-      
-    </style>
-    <script>
-    function toggleParagraph() {
-       
-      var paragraph = document.getElementById('hidden-paragraph');
-      if( paragraph.style.display == 'block'){
-      paragraph.style.display = 'none';
-      //document.getElementById('reveal-link').style.display = 'none'; // Hide the link
-      return;
-      } 
-      paragraph.style.display = 'block';
-     
-    }
-    </script>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<section class="intro">
+  <h1>Pasumarthi Sreekar</h1>
+  <p class="meta">Master of Science in Computing (AI Track), The University of Utah &middot; Salt Lake City, UT</p>
 
-    <title>Pasumarthi Sreekar</title>
+  <p>I work on fine-tuning and aligning large language models — supervised fine-tuning, reinforcement learning (GRPO), and retrieval-augmented agentic systems — with a particular interest in applying these to healthcare and structured-data extraction problems. I also write about the theory underneath: high-dimensional geometry, biased stochastic optimization, and cryptographic watermarking for generative models.</p>
 
-    <meta name="author" content="Pasumarthi Sreekar">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="images/favicon/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" type="text/css" href="stylesheet.css">
-    
-  </head>
+  <p>Previously, I graduated with a Bachelor of Technology in Computer Science and Engineering from the Indian Institute of Information Technology, Guwahati, advised by <a href="https://www.iiitg.ac.in/computer-science-and-engineering/dr-kaustuv-nag">Dr. Kaustuv Nag</a>.</p>
 
-  <body>
-    <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-      <tr style="padding:0px">
-        <td style="padding:0px">
-          <table style="width:100%
-;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr style="padding:0px">
-              <td style="padding:2.5%;width:63%;vertical-align:middle">
-                <p class="name" style="text-align: center;">
-                  Pasumarthi Sreekar
-                </p>
-                <p>I'm broadly interested in natural language processing, machine learning and dimensionality reduction.</p><p> Previously, I graduated with a Bachelor of Technology in Computer Science and Engineering from Indian Institute of Information Technology, Guwahati. I was advised by <a href="https://www.iiitg.ac.in/computer-science-and-engineering/dr-kaustuv-nag">Dr. Kaustuv Nag</a> as part of my Bachelor thesis.</p>
+  <p class="links">
+    <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a>
+    <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a>
+    <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+  </p>
+</section>
 
-               
-                <p>
-                   </p>
-                <p style="text-align:center">
-                  <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &nbsp;/&nbsp;
-                  
-                  <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &nbsp;/&nbsp;
-                  <a href="https://github.com/pasumarthisreekar/">Github</a>
-                </p>
-              </td>
-              <td style="padding:2.5%;width:20%;max-width:20%">
-                <a href="images/JonBarron.jpg"><img style="width:100%;max-width:100%;object-fit: cover; border-radius: 50%;" alt="profile photo" src="images/JonBarron.jpg" class="hoverZoomLink"></a>
-              </td>
-            </tr>
-          </tbody></table>
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-              <tr>
-              <td style="padding:20px;width:100%;vertical-align:middle">
-                <h2>Research</h2>
-                <p>
-                  My bachelor thesis was on augmenting autoencoders with structure preserving properties for the purpose of dimensionality reduction, which could then be used for tasks such as data visualization and classification. Prior to that, I worked on a preliminary research project leading to the Bachelor thesis.
-                
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <td style="padding:20px;width:100%;vertical-align:middle">
-            <h2>Research Projects</h2>
-<p>
-  <span class="papertitle">
-    Bachelor Thesis: Structure Preserving Deep Autoencoder based Dimensionality Reduction Scheme for Data Visualization
-    </span>
+<section id="projects">
+  <h2>Projects</h2>
 
-    <br />
-	  <a href="data/Bachelor Thesis.pdf">[thesis]</a> <a href="#" id="reveal-link" onclick="toggleParagraph();">[abstract]</a> <a href="https://github.com/pasumarthisreekar/bachelor-thesis">[code]</a><a href="data/Supplementary Material.pdf">[supplementary material]</a>
+  <div class="project-card">
+    <h3>Fine-Tuned LLM for Clinical Information Extraction</h3>
+    <div class="tags">Python &middot; PyTorch &middot; Unsloth &middot; LoRA &middot; Gemini API</div>
+    <p>Fine-tuned Llama-3.1-8B-Instruct with LoRA to extract structured diagnoses and medications from clinical notes, improving diagnosis recall from 38.2% to 73.2% against ground truth. Evaluated with exact-match scoring and an LLM-as-judge pipeline.</p>
+    <p class="repo-link"><a href="https://github.com/pasumarthisreekar/sft-clinical-llm-extraction">View on GitHub &rarr;</a></p>
+  </div>
 
-<p id="hidden-paragraph">Autoencoders are typically used for the task of dimensionality reduction. However, a drawback of theirs is that if they have additional representative capacity, they may not preserve the structure of input data faithfully in the lower-dimensional space. Regularisation can be a way to solve this problem, as it can encourge the autoencoder to learn stucture preserving properties of the dataset. Here, we propose a regulariser that aims to preserve the geometric properties of the input data by preserving the geodesic distances between data points in the input space as the Euclidean distance in the embedding space. Further, for the task of data visualization, we set the lower dimensionality to 2 or 3. We then test the visual quality of the embeddings and observe that the autoencoder was able to preserve the manifold structure successfully.
-</p> 
+  <div class="project-card">
+    <h3>GRPO Reinforcement Fine-Tuning for Demographic Response Calibration</h3>
+    <div class="tags">Python &middot; PyTorch &middot; TRL &middot; LoRA &middot; Gemini API</div>
+    <p>Fine-tuned Llama-3-8B-Instruct with GRPO to align a model's response distribution with real US survey data (GSS, ANES), reducing average Jensen-Shannon Divergence from ground truth by 40%.</p>
+    <p class="repo-link"><a href="https://github.com/pasumarthisreekar/grpo-demographic-calibration">View on GitHub &rarr;</a></p>
+  </div>
 
-</p>
-        
-   
-    
-      
+  <div class="project-card">
+    <h3>Agentic RAG System with MCP Tool-Calling for Technical Document Q&amp;A</h3>
+    <div class="tags">Python &middot; LlamaIndex &middot; FastMCP &middot; Qdrant &middot; RAGAS</div>
+    <p>Multi-tool agentic RAG system answering FAA maintenance questions strictly grounded in an ingested technical manual, exposing retrieval tools over MCP. Evaluated at 0.91 faithfulness and ~1.00 context precision/recall.</p>
+    <p class="repo-link"><a href="https://github.com/pasumarthisreekar/agentic-rag-faa-manual">View on GitHub &rarr;</a></p>
+  </div>
+</section>
 
-           
+<section id="blog">
+  <h2>Blog</h2>
+  <p>Long-form derivations I didn't want to just cite — rebuilt from first principles, checked for internal consistency, and (where possible) validated against a notebook.</p>
 
-          
+  <div class="series-group">
+    <div class="series-title">Series: High-Dimensional Geometry</div>
+    <div class="post-card">
+      <h3><a href="blog/uniform-sphere-sampling.html">Why a Gaussian, Normalized, Gives You a Uniform Sphere</a></h3>
+      <div class="series">Part 1</div>
+      <p>A proof I refused to just believe — why normalizing a high-dimensional Gaussian gives a uniform direction on the sphere, and why two random Gaussian vectors end up nearly perpendicular.</p>
+    </div>
+    <div class="post-card">
+      <h3><a href="blog/gaussian-annulus-theorem.html">The Bell Curve Is a Soap Bubble: Proving the Gaussian Annulus Theorem</a></h3>
+      <div class="series">Part 2</div>
+      <p>Why a high-dimensional Gaussian concentrates almost all its mass on a thin shell at radius &radic;d, despite peak density sitting at the origin — proved rigorously via moment bounds.</p>
+    </div>
+    <div class="post-card">
+      <h3><a href="blog/jl-lemma-nearest-neighbor.html">The Johnson–Lindenstrauss Lemma: Squashing a Million Dimensions Into a Few Hundred, on Purpose</a></h3>
+      <div class="series">Part 3</div>
+      <p>The annulus theorem, reused: how random projection preserves every pairwise distance in a dataset, and why this is load-bearing for real vector search systems.</p>
+    </div>
+  </div>
 
-                     
+  <div class="series-group">
+    <div class="series-title">Series: Biased SGD</div>
+    <div class="post-card">
+      <h3><a href="blog/biased-sgd-theory.html">The Floor You Can't Optimize Away: SGD with Biased Gradients</a></h3>
+      <div class="series">Part 1</div>
+      <p>Deriving the descent lemma for SGD under a bounded-bias gradient oracle, and showing the resulting convergence floor is tight — not a proof artifact.</p>
+    </div>
+    <div class="post-card">
+      <h3><a href="blog/biased-sgd-topk-randk.html">Top-k, Rand-k, and a Sphere You've Already Met</a></h3>
+      <div class="series">Part 2</div>
+      <p>Working out the bias/variance parameters for two real gradient compressors — and finding the Gaussian Annulus Theorem hiding inside the noisy top-k floor.</p>
+    </div>
+    <div class="post-card">
+      <h3><a href="blog/biased-sgd-error-feedback.html">The Leash: How Error Feedback Kills the Floor</a></h3>
+      <div class="series">Part 3</div>
+      <p>How feeding discarded compression error back into the next step removes the permanent convergence floor entirely — via a virtual-sequence proof trick.</p>
+    </div>
+  </div>
+</section>
 
-          
-          </tbody></table>
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:0px">
-                <br>
-                <p style="text-align:right;font-size:small;">
-                  Template from <a href="https://github.com/jonbarron/jonbarron_website">Jon Barron</a> 
-              </td>
-            </tr>
-          </tbody></table>
-        </td>
-      </tr>
-    </table>
-  </body>
+<footer>
+  &copy; 2026 Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+
+</body>
 </html>

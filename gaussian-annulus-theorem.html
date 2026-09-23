@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Bell Curve Is a Soap Bubble: Proving the Gaussian Annulus Theorem — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; High-Dimensional Geometry, Part 2</p>
+<h1>The Bell Curve Is a Soap Bubble: Proving the Gaussian Annulus Theorem</h1>
+<p><em>Second post in this series — first one was about why normalizing a Gaussian gives you a uniform sphere. This one is about what happens to the part I threw away: the length.</em></p>
+<hr />
+<p>Picture a 1-dimensional Gaussian. It's a soft hill. Most of the mass sits close to zero, tapering off symmetrically on both sides. Completely unsurprising. Completely intuitive.</p>
+<p>Now take that same idea and put it in a thousand dimensions. Something breaks.</p>
+<p>$$p(x) = \frac{1}{(2\pi)^{d/2}\sigma^d} \exp\left(-\frac{|x|^2}{2\sigma^2}\right)$$</p>
+<p>This density is still maximized at the origin — dead center, $x=0$, exactly where you'd expect the "peak" of a bell curve to live. And yet, if you actually go looking for probability mass near the origin in high dimensions, you'll find almost none of it there. Nearly all of it — and I mean <em>nearly all</em>, not "a good chunk" — sits in a thin shell at radius $\approx \sigma\sqrt{d}$. Not spread from $0$ to $\sqrt d$. Concentrated <em>at</em> $\sqrt d$, in a band whose width doesn't even grow as $d$ grows.</p>
+<p>A bell curve, pushed into enough dimensions, stops looking like a hill and starts looking like a soap bubble.</p>
+<p>This is the Gaussian Annulus Theorem, and this post is the proof — the real one, not the "trust me" version.</p>
+<h2>Density is not probability</h2>
+<p>The whole apparent paradox — maximum density at a point with almost no probability mass — dissolves the moment you remember that <strong>probability is density times volume</strong>, not density alone.</p>
+<p>Near the origin, density is at its peak, sure. But volume near the origin, in high dimensions, is essentially zero. A thin shell at radius $r$ has volume proportional to $r^{d-1}\,dr$ — and near $r=0$, a tiny number raised to the power $d-1$ collapses to nothing. High density times negligible volume is still negligible probability.</p>
+<p>As $r$ grows, two forces fight each other:</p>
+<p>$$(\text{mass at radius } r) \;\propto\; \underbrace{e^{-r^2/2\sigma^2}}<em>{\text{shrinking}} \;\times\; \underbrace{r^{d-1}}</em>{\text{growing}}$$</p>
+<p>Near the origin, the vanishing volume wins — barely any mass, despite peak density. Push $r$ out and the volume term ($r^{d-1}$) grows faster than the density is shrinking, so total mass <em>increases</em>. Push $r$ out further still, and the exponential decay eventually wins back — mass <em>decreases</em>. Somewhere in between, these two effects balance exactly. That balance point is at $r \approx \sigma\sqrt d$ — which is exactly where $E[|x|^2] = d\sigma^2$ said it would be, since each of the $d$ independent coordinates contributes $\sigma^2$ to the expected squared length.</p>
+<p>That gets you the <em>center</em> of the shell. It doesn't yet tell you how <em>thin</em> the shell actually is — and that's the sharper, stranger part.</p>
+<h2>Why the shell doesn't just get farther away — it gets thinner, relatively</h2>
+<p>$|x|^2 = \sum_i x_i^2$ is a sum of $d$ independent pieces, each with fixed variance. Variance of independent things adds, so $\text{Var}(|x|^2)$ grows linearly in $d$ — meaning its standard deviation grows like $\sqrt{d}$. Mean grows like $d$; standard deviation grows like $\sqrt d$. The ratio between them, $\sqrt d / d = 1/\sqrt d$, shrinks toward zero. That's the Law of Large Numbers doing its ordinary work — the same reason a million coin flips lands much closer to 50/50, <em>relatively speaking</em>, than four flips do.</p>
+<p>Here's the twist that took real algebra to see clearly: convert this fluctuation in $|x|^2$ into a fluctuation in $|x|$ itself, and something disappears entirely.</p>
+<p>$$|x|^2 = d\sigma^2 + Z\sqrt d, \qquad |x| = \sqrt{d\sigma^2 + Z\sqrt d} = \sigma\sqrt d\sqrt{1+\frac{Z}{\sigma^2\sqrt d}}$$</p>
+<p>For large $d$, that inner term is small, so $\sqrt{1+\epsilon}\approx 1+\epsilon/2$ applies:</p>
+<p>$$|x| \approx \sigma\sqrt d + \frac{\sigma\sqrt d\cdot Z}{2\sigma^2\sqrt d} = \sigma\sqrt d + \frac{Z}{2\sigma}$$</p>
+<p>Watch the $\sqrt d$'s. One came down from the radius; one sat in the denominator of the fluctuation term. They cancel <em>exactly</em>. What survives has no $d$ in it at all. The fluctuation in $|x|^2$ scales like $\sqrt d$ — but the fluctuation in $|x|$ itself is a flat constant, forever, no matter how large $d$ gets.</p>
+<p>Squaring is what does this. Near a large value, $r^2$ is very sensitive to changes in $r$ (its derivative is $2r$, which is large when $r$ is large) — so a modest change in $r$ produces a large change in $r^2$. Run that backward: a change of size $\sqrt d$ in $|x|^2$, near $r \approx \sigma\sqrt d$, corresponds to a change of only $\frac{\sqrt d}{2\sigma\sqrt d} = \frac{1}{2\sigma}$ in $|x|$ — the large radius in the denominator eats the growth in the numerator, leaving a constant behind.</p>
+<h2>Making it rigorous: the book's actual route</h2>
+<p>The argument above gives the right <em>scaling</em> — but it's a first-order Taylor approximation, not a proof that large deviations are actually rare. The textbook proof gets there differently: instead of computing a moment generating function by hand, it verifies that $|x|^2 - d$ satisfies the moment conditions of a general concentration result (the book's Theorem 12.5, a Bernstein-type bound for sums of independent, mean-zero variables) and then simply invokes it.</p>
+<p><strong>Set up a mean-zero variable.</strong> Let $y_i = x_i^2 - 1$. Since $E(x_i^2)=1$ for a standard Gaussian coordinate, $E(y_i)=0$, and
+$$|x|^2 - d = \sum_i x_i^2 - d = \sum_i (x_i^2-1) = \sum_i y_i$$
+so bounding the deviation of $|x|^2$ from $d$ is exactly bounding the sum $y_1+\cdots+y_d$.</p>
+<p><strong>Bound the moments of $y_i$, crudely but sufficiently.</strong> Split on the size of $x_i$. For $|x_i|\le 1$: $y_i\in[-1,0]$, so $|y_i|^s\le 1$. For $|x_i|\ge 1$: $|y_i|=|x_i^2-1|\le x_i^2$, so $|y_i|^s \le x_i^{2s}$. Both cases are covered at once by the single crude bound $|y_i|^s \le 1+x_i^{2s}$, giving
+$$|E(y_i^s)| \le E(|y_i|^s) \le 1 + E(x_i^{2s})$$</p>
+<p><strong>Compute $E(x_i^{2s})$ via a Gamma-function substitution.</strong> Writing the Gaussian moment as an integral and substituting $z=x^2/2$ turns it into a Gamma integral, $\Gamma(s+1/2)$ — which is where a Gaussian's even moments and factorials meet. Working through the constants gives the clean bound
+$$|E(y_i^s)| \le 2^s\, s!$$
+As a check: at $s=2$, this gives $\text{Var}(y_i) = E(y_i^2) \le 2^2\cdot 2! = 8$.</p>
+<p><strong>The moments have the wrong shape — fix it by rescaling.</strong> Theorem 12.5 needs moments that grow like (some fixed $\sigma^2$) times $s!$ — not like $2^s\, s!$, which grows too fast in $s$. Rescale: let $w_i = y_i/2$. Dividing by 2 divides the $s$-th moment by $2^s$, and that factor cancels the offending $2^s$ exactly:
+$$\text{Var}(w_i) \le 2, \qquad |E(w_i^s)| \le 2\,s!$$
+Now the moments have exactly the shape the theorem requires, with $\sigma^2 = 2$.</p>
+<p><strong>Restate the goal in terms of $w_i$.</strong> Since $\sum_i y_i = 2\sum_i w_i = |x|^2-d$, bounding $|x|-\sqrt d$ by $\beta$ translates into bounding
+$$|w_1+\cdots+w_d| \ge \frac{\beta\sqrt d}{2}$$</p>
+<p><strong>Apply Theorem 12.5 and check the arithmetic.</strong> The theorem's sharper bound states: for independent, mean-zero $x_i$ with variance at most $\sigma^2$ and moments $|E(x_i^r)|\le \sigma^2 r!$,
+$$P(|x_1+\cdots+x_n|\ge a) \le 3\,e^{-a^2/(12n\sigma^2)}$$
+Plug in $\sigma^2=2$, $n=d$, and the threshold $a = \beta\sqrt d/2$ derived above:
+$$a^2 = \frac{\beta^2 d}{4}, \qquad 12n\sigma^2 = 24d, \qquad \frac{a^2}{12n\sigma^2} = \frac{\beta^2 d/4}{24d} = \frac{\beta^2}{96}$$
+The $d$'s cancel exactly, top and bottom, leaving
+$$P\left(|w_1+\cdots+w_d|\ge \frac{\beta\sqrt d}{2}\right) \le 3\,e^{-\beta^2/96}$$
+matching the book's stated result exactly, with no approximation.</p>
+<p>No $d$ anywhere in that final exponent. Whether $d$ is a hundred or a hundred billion, the probability of $|x|$ straying more than a <em>fixed</em> amount $\beta$ from $\sqrt d$ is capped by exactly the same number. That is the rigorous meaning of "annulus of constant width" — not a heuristic about variance, an actual dimension-free tail bound, arrived at by checking that a Bernstein-type theorem's hypotheses hold and then simply invoking it.</p>
+<p>The mechanism worth sitting with is the rescaling step. The raw moment bound, $2^s s!$, was too aggressive — it grew exponentially in $s$ in a way no clean concentration theorem could absorb. Dividing by 2 wasn't a cosmetic convenience; it was the exact amount needed to cancel that runaway $2^s$ and leave a bound with precisely the $s!$ shape a general-purpose theorem knows how to handle. Small, deliberate rescaling, aimed at making a stubborn quantity fit a known mold — that's most of what this proof actually is.</p>
+<h2>What this actually says about the shape of a Gaussian</h2>
+<p>Put this together with the other result from a few nights ago — that normalizing a Gaussian gives a direction distributed exactly uniformly on the sphere, in every dimension, no limit required — and the full picture snaps into focus:</p>
+<p><strong>A high-dimensional Gaussian is, for all practical purposes, a uniformly random point on the surface of a sphere of radius $\sigma\sqrt d$.</strong></p>
+<p>Direction: exactly uniform, always. Magnitude: not literally fixed, but concentrated so tightly, and so much more tightly as $d$ grows, that treating it as fixed becomes essentially exact. The formula's peak sits at the origin. Almost none of its mass does. In enough dimensions, "bell curve" is close to a misnomer — it's a shell.</p>
+<h2>Why this isn't a curiosity</h2>
+<p>This single fact is quietly load-bearing for a large chunk of modern machine learning and high-dimensional statistics. It's the reason Euclidean nearest-neighbor search degrades in high dimensions — points that should feel "close" or "far" start looking roughly equidistant, because almost every point ends up living on the same thin shell. It's the mechanism underneath random projections and the Johnson–Lindenstrauss lemma, which relies on exactly this kind of concentration to guarantee that a random low-dimensional projection preserves distances with high probability. It's why intuitions built on 2D scatter plots — "clusters look like blobs," "nearby points are similar" — quietly stop being reliable once feature counts climb into the hundreds or thousands.</p>
+<p>None of that is exotic. It's the default behavior of high-dimensional space, discovered here the hard way: not cited, not taken on faith, rebuilt from a moment generating function and a Taylor expansion until every piece of it held.</p>
+<hr />
+<p><em>Direction, uniform. Magnitude, a spike. A Gaussian, way out past three dimensions, is barely a cloud at all — it's closer to a skin.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>

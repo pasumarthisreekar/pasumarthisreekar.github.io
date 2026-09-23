@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Johnson–Lindenstrauss Lemma: Squashing a Million Dimensions Into a Few Hundred, on Purpose — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; High-Dimensional Geometry, Part 3</p>
+<h1>The Johnson–Lindenstrauss Lemma: Squashing a Million Dimensions Into a Few Hundred, on Purpose</h1>
+<p><em>Third post in this series. The first two built the machinery — a normalized Gaussian is uniform on a sphere, and a high-dimensional Gaussian is really a thin shell at radius $\sqrt d$. This post is where that machinery gets pointed at something people actually build production systems out of.</em></p>
+<hr />
+<p>Here's a genuinely strange fact, stated plainly before any proof: take any $n$ points, living in a space with a million dimensions — or a billion, it doesn't matter — and you can compress them down to around $O(\log n)$ dimensions, using nothing but a handful of random Gaussian vectors, and every single pairwise distance survives, distorted by at most a small, tunable amount. The number of dimensions you need to keep never depends on how many dimensions you started with. That's the Johnson–Lindenstrauss lemma, and it turns out to be exactly the two-night derivation from earlier in this series, run a second time, aimed at a new target.</p>
+<h2>The projection</h2>
+<p>Pick $k$ random vectors $u_1, u_2, \dots, u_k \in \mathbb{R}^d$, each with independent standard-Gaussian coordinates. Define
+$$f(v) = (u_1\cdot v,\ u_2\cdot v,\ \dots,\ u_k\cdot v)$$
+Project a point by taking its dot product against each of the $k$ random directions and stacking the results. Each $u_i\cdot v$ is, geometrically, the "shadow" of $v$ along a random direction; doing this $k$ times gives $v$ a new, much shorter address.</p>
+<p>The map is linear, so $f(v_1-v_2) = f(v_1)-f(v_2)$ — distance between two projected points reduces to the length of one projected difference vector. That single fact means the entire problem — "does this projection preserve <em>all</em> pairwise distances" — collapses to a question you've already fully answered: "does this projection preserve the <em>length</em> of one fixed vector."</p>
+<h2>Why $|f(v)|$ behaves exactly like the annulus theorem</h2>
+<p>Each coordinate $u_i\cdot v = u_{i,1}v_1 + \cdots + u_{i,d}v_d$ is a linear combination of independent Gaussians — and a linear combination of independent Gaussians is itself Gaussian, with $u_i\cdot v \sim N(0, |v|^2)$. Across different $i$, these are mutually independent too, since $u_1,\dots,u_k$ were drawn as separate, unrelated random vectors, and each $u_i\cdot v$ only depends on its own $u_i$.</p>
+<p>So $|f(v)|^2 = \sum_{i=1}^k (u_i\cdot v)^2$ is a sum of $k$ i.i.d. squared Gaussians — structurally identical to $|x|^2 = \sum_{i=1}^d x_i^2$ from the annulus theorem, with $k$ standing in for dimension and $|v|^2$ standing in for per-coordinate variance. Nothing new needs proving here — the same concentration machine (moment bounds, the rescaling trick that tames a runaway $2^s$ factor, Theorem 12.5) applies without modification, and gives:</p>
+<p>$$|f(v)| \approx \sqrt k\, |v|$$</p>
+<p>concentrated tightly, with deviations exponentially rare, exactly as before.</p>
+<h2>From one vector to all pairs: the union bound, a second time</h2>
+<p>Fix any pair $v_i, v_j$. The Random Projection Theorem — the JL-flavored restatement of the annulus theorem — says the probability that $|f(v_i-v_j)|$ strays outside $(1\pm\epsilon)\sqrt k\,|v_i-v_j|$ is at most $3e^{-ck\epsilon^2}$.</p>
+<p>Choose $k \ge \frac{3}{c\epsilon^2}\ln n$. Plugging this into the exponent:
+$$ck\epsilon^2 \ge c\cdot\frac{3\ln n}{c\epsilon^2}\cdot\epsilon^2 = 3\ln n \implies 3e^{-ck\epsilon^2} \le \frac{3}{n^3}$$</p>
+<p>Now sum over all $\binom n2 &lt; \frac{n^2}{2}$ pairs — the union bound, needing no independence between pairs, exactly as it didn't two nights ago:
+$$P(\text{some pair distorted}) \le \frac{n^2}{2}\cdot\frac{3}{n^3} = \frac{3}{2n}$$</p>
+<p>The engineering is deliberate: the per-pair failure rate was driven down to $n^{-3}$ <em>specifically because</em> there are $n^2$-ish pairs to sum over — a race between how many things can go wrong and how rare each individual failure is, arranged so the rare side wins. Flip it around, and with probability at least $1-\frac{3}{2n}$, every pairwise distance survives the compression within a factor of $(1\pm\epsilon)$.</p>
+<p>$k$ never mentions $d$. That's the entire content of the lemma: whether the original space has a hundred dimensions or a hundred billion, the number of dimensions you actually need to keep is governed only by how many points you have and how much distortion you'll tolerate.</p>
+<h2>Where this actually lives, in production</h2>
+<p>This isn't a theorem that stays inside a textbook. It's sitting, mostly invisibly, underneath a huge fraction of modern search infrastructure — though it's worth being honest about which half of modern search it lives in, because there are two very different bets being made out there.</p>
+<p><strong>Sparse, lexical search — BM25 and the inverted index — sidesteps this problem entirely, on purpose.</strong> A document is represented as a sparse vector over a vocabulary of hundreds of thousands of terms, but almost every entry is zero. The inverted index exploits that directly: for each term, keep a list of which documents contain it. A query touches only its own handful of terms, intersects and scores the relevant posting lists, and never once computes a distance in the full ambient space. No concentration of measure, because there's no continuous high-dimensional geometry being done at all — just set intersection and a term-weighting formula.</p>
+<p><strong>Dense embedding search is where the theory becomes load-bearing.</strong> Modern retrieval systems — RAG pipelines, semantic search, recommendation engines — map queries and documents into dense vectors (768, 1024, sometimes several thousand dimensions, straight out of a transformer) where distance is supposed to mean something semantically. This is exactly the regime where everything from these last few nights bites for real: nearest-neighbor search in raw high-dimensional space genuinely degrades, because points spread out onto something close to a thin annulus, and pairwise distances start looking suspiciously uniform to each other — the same phenomenon, verbatim, that made two random Gaussian vectors nearly orthogonal a few nights ago is what makes naive high-dimensional nearest-neighbor search behave strangely today.</p>
+<p>Vector databases — FAISS, HNSW, ScaNN, and the rest — exist specifically to manage this. Random projection à la JL, product quantization, and approximate nearest-neighbor graph structures are standard tools for exactly this reason: not because engineers enjoy dimensionality reduction as an aesthetic choice, but because raw high-dimensional distance computation inherits every one of the pathologies this series has spent two thousand words deriving from first principles. Real hybrid search systems typically run both halves together — sparse lexical matching for precision on exact terms, dense embedding search for semantic recall, blended by a re-ranking step — because each side is good at exactly what the other one structurally can't do.</p>
+<h2>The through-line</h2>
+<p>None of this needed new machinery. Concentration of a sum of independent Gaussian-derived terms, and a union bound arranged so the failure rate shrinks faster than the number of things that could fail — that's the entire proof, used twice, first to show two random vectors are almost perpendicular, now to show a random projection almost perfectly preserves every distance in a whole dataset at once. The same tool, pointed at a different question, is most of what a proof like this actually is.</p>
+<hr />
+<p><em>A million-dimensional dataset, compressed down to a few hundred dimensions, chosen by flipping a coin a few hundred times per point — and every distance that mattered is still there, almost exactly, with a guarantee you can write down and verify by hand.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>

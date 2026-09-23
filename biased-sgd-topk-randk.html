@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top-k, Rand-k, and a Sphere You've Already Met — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; Biased SGD, Part 2</p>
+<h1>Top-k, Rand-k, and a Sphere You've Already Met</h1>
+<p><em>Second post in the biased-SGD series. First post built the general theory and the floor it produces. This one makes the floor concrete for a real compressor — and finds an unexpected reunion with the Gaussian Annulus Theorem from an earlier project.</em></p>
+<hr />
+<p>Top-$k$ sparsification is about as simple as a compression scheme gets: look at a gradient vector's $d$ coordinates, keep whichever $k$ are largest in absolute value, zero out the rest. It's a projection — but not the kind from the JL project. A random projection uses a <em>fixed</em> subspace, chosen once, with no dependence on the vector being projected, which is exactly why it's unbiased. Top-$k$'s target subspace moves with the data — which $k$ coordinates survive depends entirely on the specific vector being compressed. That data-dependence is the entire source of everything in this post.</p>
+<h2>The clean case: compressing the true gradient directly</h2>
+<p>Start with no noise at all — compress $\nabla f(x)$ itself. Write it as $(v_1,\dots,v_d)$, with $v_1,\dots,v_k$ the kept (largest) coordinates and $v_{k+1},\dots,v_d$ the discarded ones. Then, exactly, coordinate by coordinate:
+$$b(x) = C(\nabla f(x)) - \nabla f(x)$$
+is zero in every kept slot and $-v_i$ in every discarded one — literally the record of what got deleted, with a sign flip.</p>
+<p>This gives an exact identity, no inequality needed: $|b(x)|^2$ equals the sum of squares of the <em>discarded</em> coordinates, which equals $|\nabla f(x)|^2 - |C(\nabla f(x))|^2$. In the worst case — every coordinate exactly equal in magnitude, so top-$k$ has no genuine signal to exploit and the choice of what to keep is essentially arbitrary — each coordinate carries exactly $1/d$ of the total squared norm, and discarding $d-k$ of them removes exactly a $\frac{d-k}{d}$ fraction:</p>
+<p>$$|b(x)|^2 \le \frac{d-k}{d}|\nabla f(x)|^2, \qquad \zeta^2=0$$</p>
+<p>No floor at all. This makes sense the moment you check it against a stationary point: $\nabla f(x^*)=0$ compresses to exactly $C(0)=0$, trivially — there's nothing there to distort in the first place.</p>
+<h2>Why the noisy case is a genuinely different problem</h2>
+<p>Real SGD compresses $w = \nabla f(x)+n(x,\xi)$, with $n\sim N(0,\sigma^2 I_d)$ — and the clean coordinate-by-coordinate bookkeeping above breaks immediately. <em>Which</em> coordinates count as the top $k$ can now flip from one noisy draw to the next: a near-tie between two coordinates can resolve either way depending on that round's specific noise. Trying to compute $E_n[C(w)_i]$ for some coordinate near the cutoff runs straight into a wall — that expectation is $E_n\big[w_i\cdot\mathbb{1}[\text{coordinate }i\text{ survives}]\big]$, and $w_i$ and "does coordinate $i$ survive" are not independent. Whether a coordinate gets kept depends directly on how large it happened to be — so the expectation of the product cannot be split into a product of expectations. There is no clean, exact formula for the noisy case's bias.</p>
+<p>This is where Jensen's inequality earns its keep. Since $b(x) = E_n[C(w)] - \nabla f(x) = E_n[C(w)-w]$ (using $E_n[w]=\nabla f(x)$):
+$$|b(x)|^2 = |E_n[C(w)-w]|^2 \le E_n|C(w)-w|^2$$</p>
+<p>— trading an unknowable exact quantity for a computable upper bound. And top-$k$ satisfies a genuinely useful deterministic fact, true for <em>every</em> realization of $w$, no randomness involved: $|C(w)-w|^2 \le (1-k/d)|w|^2$. This holds pointwise, so it survives taking $E_n$ of both sides:
+$$|b(x)|^2 \le \left(1-\frac kd\right)E_n|w|^2 = \left(1-\frac kd\right)\big(|\nabla f(x)|^2+d\sigma^2\big)$$</p>
+<p>Reading off $m$ and $\zeta^2$:
+$$m = 1-\frac kd, \qquad \zeta^2 = \left(1-\frac kd\right)d\sigma^2$$</p>
+<p>Set $\sigma^2=0$ and this collapses exactly to the deterministic case above — consistent, as it should be. But with noise present, $\zeta^2$ is strictly positive: a genuine, permanent floor that exists specifically <em>because</em> compression is being applied to something noisy, not because compression itself is inherently biased.</p>
+<h2>An unexpected reunion with the annulus theorem</h2>
+<p>Here's a fact worth sitting with. $d\sigma^2 = (\sigma\sqrt d)^2$ — and $\sigma\sqrt d$ is exactly the radius of the thin spherical shell the Gaussian Annulus Theorem says $n(x,\xi)$ concentrates on, for large $d$. Which means the noise vector being fed into top-$k$ isn't just "some randomness" — geometrically, it's the true gradient, translated by a vector confined almost exactly to a sphere of radius $\sigma\sqrt d$, pointing in a direction that's uniformly random (both facts straight out of the same derivation that produced the annulus theorem in the first place).</p>
+<p>$\zeta^2 = (d-k)\sigma^2 = \frac{d-k}{d}\cdot d\sigma^2$ — the discarded fraction, times that shell's own squared radius. The bias floor isn't merely <em>related</em> to the annulus theorem — it's a direct rescaling of it. The same geometric object that made two random Gaussian vectors nearly orthogonal, several weeks and one different project ago, is exactly the object producing the permanent error floor in a completely different setting.</p>
+<h2>Why random-$k$ pays a smaller bias tax — but not zero</h2>
+<p>Rand-$k$ compresses differently: pick $k$ coordinates <em>uniformly at random</em>, independent of their actual values, keep them exactly as-is, zero the rest — no value-dependence anywhere in the selection rule. Because of this, rand-$k$ satisfies a genuinely useful linearity property the paper states directly: $E[\text{rand-}k(a+b)] = E[\text{rand-}k(a)]+E[\text{rand-}k(b)]$ for any vectors $a,b$. Top-$k$ has no such property — which coordinates are largest in $a+b$ generally has nothing to do with which are largest in $a$ or $b$ separately.</p>
+<p>This linearity makes the noisy and noiseless cases collapse into one calculation. For $g(x)=\text{rand-}k(\nabla f(x)+n(x))$:
+$$E[g(x)] = E[\text{rand-}k(\nabla f(x))] + E[\text{rand-}k(n(x))] = \frac kd\nabla f(x) + \frac kd\underbrace{E[n(x)]}_{=0} = \frac kd\nabla f(x)$$</p>
+<p>The noise term vanishes from the bias entirely — no Jensen's inequality needed, no worst-case approximation, exact in both the noisy and noiseless case simultaneously. But notice: $E[\text{rand-}k(v)] = \frac kd v$, <strong>not</strong> $v$ itself. Unlike a properly rescaled unbiased sparsifier, the raw rand-$k$ operator (keep-or-zero, no rescaling) systematically <em>shrinks</em> the expected output by exactly the factor $k/d$ — which means it is not actually unbiased:
+$$b(x) = \frac kd\nabla f(x) - \nabla f(x) = -\left(1-\frac kd\right)\nabla f(x) \implies |b(x)|^2 = \left(\frac{d-k}{d}\right)^2|\nabla f(x)|^2$$</p>
+<p>$$\boxed{m = \left(\frac{d-k}{d}\right)^2, \qquad \zeta^2=0, \text{ unaffected by noise}}$$</p>
+<p>Real, nonzero relative bias — smaller than top-$k$'s $\frac{d-k}{d}$ (since squaring a fraction between 0 and 1 makes it smaller), but not the zero-bias story a naive reading of "random selection should be unbiased" might suggest. The zero-bias intuition is right for a <em>rescaled</em> random sparsifier ($\times\frac dk$ on the kept coordinates) — but that's a different operator from the one defined and used here.</p>
+<p>One honest note on precision: the paper itself states $m=\frac{d-k}{d}$ for rand-$k$ — the same value as top-$k$, not the smaller $\left(\frac{d-k}{d}\right)^2$ derived above. The two aren't in conflict; they're bounding different things. The paper's proof bounds bias by the (looser, easier-to-compute) <em>mean squared error</em> $E|C(v)-v|^2$, which is always at least as large as the <em>actual</em> bias $|E[C(v)]-v|^2$ — variance is never negative, so squared-norm-of-an-expectation is always $\le$ expectation-of-a-squared-norm. Computing $E[\text{rand-}k(v)]=\frac kd v$ directly, as above, gives the tighter, exact value. Both are valid; one just leaves some slack on the table.</p>
+<p>What rand-$k$ <em>does</em> get exactly right, thanks to the same linearity property, is the noise term. Following the same derivation the paper carries out for the general stochastic case:
+$$M = \left(1+M_b\right)\frac dk - 1, \qquad \sigma^2 = \frac kd\sigma_b^2$$</p>
+<p>where $M_b,\sigma_b^2$ describe the noise of the uncompressed gradient. For plain Gaussian sampling noise ($M_b=0$), this is $M=\frac dk-1$ — growing large for aggressive compression (small $k$), exactly the $O(d/k)$ slowdown the paper's own discussion of Section 5.1 predicts for rand-$k$ specifically.</p>
+<p>Worth being explicit about what's actually being averaged over here, since it's easy to gloss past: rand-$k$ applied to a stochastic gradient is a <em>composite</em> oracle, with two independent sources of randomness feeding into it at once — the mini-batch draw producing $n(x)$, and rand-$k$'s own random coordinate selection. Definition 1 only ever has room for a single noise term, $n(x,\xi)$, so both sources get bundled into that one slot — but computing anything about the composite oracle (its bias, its variance) requires unbundling them again, via a nested expectation: hold the mini-batch draw fixed, average out only rand-$k$'s selection first (using $E[\text{rand-}k(v)]=\frac kd v$ for whatever fixed vector that draw produced), <em>then</em> average that result over the mini-batch draw's own randomness. Independence of the two sources is what makes this two-stage order valid and order-independent — it's exactly why $E[\text{rand-}k(n(x))]$ collapses cleanly to $\frac kd\cdot E[n(x)] = 0$ rather than requiring some more tangled joint calculation. Top-$k$ never gets this shortcut: its selection rule depends on the actual values being compressed, so which coordinates survive is entangled with the noise itself, not independent of it — the same entanglement that forced the Jensen's-inequality route below rather than a clean cancellation.</p>
+<h2>The noisy top-$k$ case — filling a genuine gap</h2>
+<p>Here's something worth being upfront about: the paper's own Table 1 states top-$k$'s parameters only for the deterministic case, $g(x)=\text{top-}k(\nabla f(x))$. It doesn't give closed-form $m,\zeta^2$ for compressing the <em>actual</em> noisy stochastic gradient, even though the paper's own Section 6 experiments run exactly that setting. Deriving it means reusing the same tool the paper itself reaches for elsewhere — Jensen's inequality — because top-$k$, unlike rand-$k$, has no linearity property to fall back on: which coordinates are largest in $\nabla f(x)+n(x)$ depends on the noise in a way that can't be decomposed cleanly.</p>
+<p>Write $w=\nabla f(x)+n(x)$. The deterministic contraction fact — $|\text{top-}k(w)-w|^2\le\frac{d-k}{d}|w|^2$, true for <em>every</em> realization of $w$, no randomness involved in the inequality itself — survives taking an expectation over $n$:
+$$|b(x)|^2 = |E_n[\text{top-}k(w)-w]|^2 \;\overset{\text{Jensen}}{\le}\; E_n|\text{top-}k(w)-w|^2 \le \frac{d-k}{d}E_n|w|^2 = \frac{d-k}{d}\big(|\nabla f(x)|^2+d\sigma^2\big)$$</p>
+<p>$$\boxed{m=\frac{d-k}{d}, \qquad \zeta^2 = (d-k)\sigma^2}$$</p>
+<p>Set $\sigma^2=0$ and this collapses exactly to the deterministic case above — a genuine internal consistency check, not something borrowed from the paper's own stated values.</p>
+<h2>The comparison, side by side</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Deterministic top-$k$</th>
+<th>Noisy top-$k$</th>
+<th>Deterministic rand-$k$</th>
+<th>Noisy rand-$k$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m$</td>
+<td>$\frac{d-k}{d}$</td>
+<td>$\frac{d-k}{d}$</td>
+<td>$\left(\frac{d-k}{d}\right)^2$</td>
+<td>$\left(\frac{d-k}{d}\right)^2$</td>
+</tr>
+<tr>
+<td>$\zeta^2$</td>
+<td>$0$</td>
+<td>$(d-k)\sigma^2$</td>
+<td>$0$</td>
+<td>$0$</td>
+</tr>
+<tr>
+<td>$M,\sigma^2$ (noise term)</td>
+<td>$0,0$</td>
+<td>—</td>
+<td>$\frac{d-k}{k},\ 0$</td>
+<td>$\frac dk-1,\ \frac kd\sigma_b^2$</td>
+</tr>
+<tr>
+<td>Floor exists?</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Why</td>
+<td>Nothing to distort at $\nabla f(x^*)=0$</td>
+<td>Compressing a vector that never vanishes, even at the optimum</td>
+<td>Selection value-independent; linearity lets bias be computed exactly — but selection is still random, so real noise remains</td>
+<td>Same linearity; noise passes cleanly into the variance term instead of contaminating the bias</td>
+</tr>
+</tbody>
+</table>
+<p>Worth being precise about that "Deterministic rand-$k$" column, since it's easy to get wrong: "deterministic" here means no gradient-sampling noise, not no randomness at all. Rand-$k$ still makes a genuinely random choice of which coordinates to keep, every single call — and unlike $b(x)$, which is defined as strictly deterministic (a fixed function of $x$, capturing only the mean), that call-to-call variability cannot be absorbed into the bias term. It shows up as real, nonzero $M$, exactly as the general formula predicts when $M_b=0$ is substituted in. Top-$k$ is the one case where the deterministic row is genuinely noise-free — because top-$k$ itself has no internal randomness at all, only value-dependent selection.</p>
+<p>The floor ($\zeta^2&gt;0$) only ever shows up for <strong>noisy top-$k$</strong> — the one combination of "value-dependent selection" and "compressing something that stays nonzero at the optimum." Rand-$k$ carries real bias too (contrary to a naive "random must be unbiased" intuition), and real noise even without any gradient noise present, but never a floor: its linearity property keeps external noise entirely out of the bias calculation, so $\zeta^2$ stays exactly zero regardless of how much gradient noise is added. What rand-$k$ pays instead is extra <em>variance</em> — a real cost, showing up in $M$ rather than $\zeta^2$, present even in the cleanest possible setting.</p>
+<h2>Why this matters beyond the algebra</h2>
+<p>Every one of these terms is checkable, not just derivable. The Section 5 experimental sweep in Ajalloeian and Stich's paper — $\sigma^2\in{0,1,100}$, $k/d\in{0.1,1}$, top-$k$ against rand-$k$ — is testing exactly the formulas above. Before running a single line of code, the theory already predicts the shape of the result: naive top-$k$ should plateau at a floor that scales linearly with $\sigma^2$ and with $(1-k/d)$; rand-$k$ shouldn't plateau at all, regardless of how much noise is present. That's the next post's job — building the notebook that checks whether the numbers actually land where the algebra says they should.</p>
+<hr />
+<p><em>A biased compressor doesn't fail because it's compressing. It fails because it's compressing something that never stops moving, using a rule that pays attention to where it's moving. Take away either one, and there's nothing left for the bias to feed on.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>

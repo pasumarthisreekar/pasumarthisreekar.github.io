@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Floor You Can't Optimize Away: SGD with Biased Gradients — Pasumarthi Sreekar</title>
+<link rel="stylesheet" href="../style.css">
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']]
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="../index.html" class="home">Pasumarthi Sreekar</a>
+  <a href="../index.html#blog">Blog</a>
+  <a href="../index.html#projects">Projects</a>
+</nav>
+<p class="meta"><a href="../index.html">&larr; Back to home</a> &nbsp;|&nbsp; Biased SGD, Part 1</p>
+<h1>The Floor You Can't Optimize Away: SGD with Biased Gradients</h1>
+<p><em>A companion series to the JL/PCA project — different toolkit (optimization theory instead of concentration of measure), same instinct: don't cite the theorem, rebuild it.</em></p>
+<hr />
+<p>Ordinary SGD has a comforting property: it's noisy, but it's honest. Sample a mini-batch, compute its gradient, and however much that estimate wobbles from one batch to the next, its <em>average</em> — over all the batches you could have drawn — lands exactly on the true gradient. Noise costs you speed. It never costs you the destination.</p>
+<p>Now compress the gradient before you use it — keep only its $k$ largest coordinates, say, to save bandwidth in a distributed training job — and something changes. The estimate is no longer just noisy. It's <em>wrong on average</em>. No amount of additional steps fixes that, because there's nothing left to average away.</p>
+<p>This is the difference between noise and bias, and it turns out to be the entire story.</p>
+<h2>Two kinds of wrongness</h2>
+<p>Write the gradient oracle you actually get, at each step, as
+$$g(x,\xi) = \nabla f(x) + b(x) + n(x,\xi), \qquad E_\xi[n(x,\xi)] = 0$$</p>
+<p>$b(x)$ is deterministic — a fixed function of where you are, unaffected by which random batch you happened to draw. $n(x,\xi)$ is exactly the opposite: it depends on the draw, but it's built to vanish on average by construction. Picture a dartboard: noise scatters your throws randomly around wherever you're aiming; bias means your entire arm is misaligned, so the <em>center</em> of the scatter sits somewhere other than the bullseye — however many darts you throw, you're averaging toward the wrong target.</p>
+<p>Ajalloeian and Stich (2020) formalize how much of each kind of wrongness a gradient method can tolerate and still make progress:</p>
+<p>$$E_\xi|n(x,\xi)|^2 \le M|\nabla f(x)+b(x)|^2+\sigma^2 \qquad\text{(bounded noise)}$$
+$$|b(x)|^2 \le m|\nabla f(x)|^2+\zeta^2, \quad 0\le m&lt;1 \qquad\text{(bounded bias)}$$</p>
+<p>Both have the same two-piece shape — something that scales with the gradient's own size, plus a flat floor. But the two floors play completely different roles, and seeing why is most of what this post is about.</p>
+<p><strong>Why noise is allowed to scale with the gradient.</strong> Early in training, individual training examples disagree wildly about which direction to move — the model hasn't found any shared structure yet, so one example's gradient can point almost anywhere relative to another's. That disagreement between examples is exactly what produces sampling noise, and it's largest precisely when the aggregate gradient is largest. Near a good solution, every example is already well-fit, individual gradients are small, and there's much less room for disagreement — noise shrinks in step with the signal.</p>
+<p><strong>Why bias is capped at $m&lt;1$, strictly.</strong> If bias were allowed to be as large as the true gradient itself, the worst case would let $b(x)=-\nabla f(x)$ exactly — a corrupting influence that cancels the real signal entirely, leaving the oracle pointing nowhere useful. Capping $m$ strictly below 1 guarantees some genuine downhill signal always survives, no matter how bad the bias gets.</p>
+<h2>Deriving the descent lemma</h2>
+<p>Everything downstream comes from one inequality, applied carefully. $L$-smoothness gives, for the actual update $x_{t+1}=x_t-\gamma g_t$:
+$$f(x_{t+1}) \le f(x_t) - \gamma\langle\nabla f(x_t), g_t\rangle + \frac{L\gamma^2}{2}|g_t|^2$$</p>
+<p>Take the conditional expectation over this step's randomness, holding $x_t$ fixed — freezing the current point and asking only "what happens on the next draw" is what lets you isolate one step's contribution instead of tangling it with the entire training history. The linear term simplifies immediately using $E_\xi[g_t]=\nabla f(x_t)+b_t$. The quadratic term needs a genuinely useful identity: for any random vector $X$, $E|X|^2 = E|X-E[X]|^2+|E[X]|^2$ — split any random quantity into "spread around its mean" plus "size of that mean." Applied to $g_t$, this cleanly separates the noise's contribution from the (biased) signal's own size.</p>
+<p>Bound the noise piece with the noise assumption, use the stepsize condition $\gamma\le\frac{1}{(M+1)L}$ to fold the resulting $\gamma^2$-order term down to $\gamma$-order, and one algebraic identity — $-2\langle u,w\rangle+|w|^2 = |w-u|^2-|u|^2$, with $u=\nabla f(x_t)$, $w=\nabla f(x_t)+b_t$ — collapses the whole inner-product-plus-norm mess into exactly $|b_t|^2-|\nabla f(x_t)|^2$. Apply the bias bound, and everything lands at:</p>
+<p>$$E[f(x_{t+1})-f(x_t)\mid x_t] \le \frac{\gamma(m-1)}{2}|\nabla f(x_t)|^2 + \frac\gamma2\zeta^2 + \frac{\gamma L}{2}\sigma^2$$</p>
+<p>Set $M=m=\zeta^2=0$ and this collapses, constant for constant, to the classical unbiased-SGD descent lemma — a genuine, tight sanity check that the general machinery hasn't introduced any slack.</p>
+<h2>Where the floor comes from</h2>
+<p>Rearrange and sum this over $T$ steps. The function-value terms telescope — every intermediate value cancels, leaving only the start and end points — and dividing by $T$ gives</p>
+<p>$$\Psi_T \le \frac{2F}{T\gamma(1-m)} + \frac{\zeta^2}{1-m} + \frac{\gamma L\sigma^2}{1-m}$$</p>
+<p>where $\Psi_T$ is the expected squared gradient norm of a uniformly-random iterate — the standard measure of progress for non-convex problems, where you can't generally guarantee the <em>last</em> iterate is the best one.</p>
+<p>Watch what happens to each term as training runs longer. The first term shrinks as $T\to\infty$ — more iterations dilute the fixed initial gap. The third shrinks as $\gamma\to0$ — a smaller stepsize tames the noise. The middle term, $\zeta^2/(1-m)$, has neither $T$ nor $\gamma$ in it. It does not move. No matter how long you train, no matter how carefully you tune the stepsize, this term sits there, permanently, the moment $\zeta^2&gt;0$.</p>
+<p>This is the entire content of the "floor": biased SGD converges, but only to a neighborhood of a stationary point, never past it.</p>
+<h2>Is the floor real, or just a loose bound?</h2>
+<p>A skeptical reader could reasonably suspect the floor is an artifact of a weak proof technique — maybe a sharper analysis eliminates it. Ajalloeian and Stich rule this out directly, by construction. Take
+$$g(x) = \nabla f(x)+\rho(x)b, \qquad \rho(x)^2 := 1+\frac{m}{\zeta^2}|\nabla f(x)|^2, \qquad |b|^2=\zeta^2$$</p>
+<p>a purely deterministic oracle, engineered so $|b(x)|^2 = m|\nabla f(x)|^2+\zeta^2$ exactly — saturating the bias assumption everywhere, not just satisfying it. At any point $x^<em>$ where this oracle reads exactly zero, $\nabla f(x^</em>)=-\rho(x^<em>)b$, and solving the resulting self-referential equation gives $|\nabla f(x^</em>)|^2 = \zeta^2/(1-m)$ — precisely the floor, hit exactly, not approximately.</p>
+<p>The cleanest way to see this proves tightness: initialize the algorithm <em>at</em> $x^<em>$ directly. Since the oracle is deterministic and reads exactly zero there, the update moves nowhere — $x_0=x_1=\cdots=x^</em>$, forever. Every iterate, not just the average over many, sits at exactly $\zeta^2/(1-m)$. No looser bound could survive this single example, and no tighter universal bound could either — one honest instance where the ceiling is touched is all a tightness argument needs.</p>
+<p>It's worth being precise about why the construction is deterministic at all. With any noise present, the algorithm never actually freezes at a point — individual noisy queries essentially never land exactly on zero, so it keeps taking small random steps forever, jittering around rather than settling. Determinism isn't a simplifying convenience layered on top of the argument; it's what makes the "every iterate is trivially equal, so the trajectory-average is trivially exact" argument possible at all. Take it away, and tightness would require a genuinely harder argument about the rate at which a wandering trajectory's average approaches the floor — an argument the paper doesn't need to make, because it doesn't need to.</p>
+<h2>What's still open</h2>
+<p>Convergence in <em>gradient norm</em> to a neighborhood is what's been shown. It's worth asking whether that implies convergence in <em>function value</em> too — and the answer is: not in general. A weakly-convex counterexample (Ajalloeian and Stich's Huber-loss construction) shows gradient descent can diverge entirely under biased updates on functions that aren't strongly convex, even while nominally satisfying the same bias assumptions.</p>
+<p>Strip away the additive floor entirely ($\zeta^2=0$, pure relative bias) and add the Polyak-Łojasiewicz condition, and the picture is rescuable: the same style of proof — bound the inner product and norm terms via Cauchy-Schwarz and the triangle inequality instead of the bias assumption directly, then use PL to convert gradient-norm descent into function-value descent — gives a clean linear convergence rate to the <em>exact</em> optimum, no floor at all.</p>
+<p>Try to redo this without PL, for merely convex functions, and the standard technique (tracking $|x_t-x^<em>|^2$ instead of gradient norm) runs into real trouble: the coefficient multiplying $|x_t-x^</em>|^2$ at each step comes out strictly greater than one, purely from the crude bounding needed to handle the bias term — meaning nothing in the argument rules out the distance to the optimum actually growing. This isn't a gap that closes with more careful bookkeeping of the same kind; it's a structurally different difficulty than the PL case, and it's exactly the question the original paper leaves explicitly open: can SGD be made robust to biased updates on general convex (not PL) problems, through modified updates or stronger bias assumptions? The proof technique that works cleanly for PL functions doesn't have an obvious analogue here, and that gap remains genuinely unresolved.</p>
+<hr />
+<p><em>Noise averages away because it doesn't know where it's going. Bias doesn't average away because it always knows exactly where it's going — just not where you wanted it to.</em></p>
+<footer>
+  Pasumarthi Sreekar &middot; <a href="mailto:sreekar.pasumarthi@gmail.com">Email</a> &middot; <a href="https://linkedin.com/in/pasumarthisreekar/">LinkedIn</a> &middot; <a href="https://github.com/pasumarthisreekar/">GitHub</a>
+</footer>
+</body>
+</html>
